@@ -3,21 +3,26 @@ var url = require('url');
 
 // var users = JSON.parse({'pe':{}});
 
+function post(reqest, response) {
+    response.end("POSTT nowy");
+}
+
+function get(request, response) {
+    response.end("get nowy");
+}
+
 function requestHandler(request, response) {
     switch (request.method) {
         case 'POST':
             //todo: request. cos
-            request.
-            console.log(request);
-            response.end("POSTT");
+            post(request, response);
             break;
         case 'GET':
-            var uri = request.url.toString();
-
-            response.end(uri);
+            get(request,response);
             break;
         default:
             response.end("działa");
+            break;
     }
 }
 
