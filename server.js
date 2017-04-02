@@ -16,23 +16,62 @@ function post(request, response) {
     request.on('end', function () {
         var id = shortid.generate();
         fs.readFile('users.json', 'utf8', function readFileCallback(err, database){
-            if (err){
+            if (err) {
                 console.log(err);
             } else {
                 databaseObject = JSON.parse(database); //now it an object
                 personObject = JSON.parse(person);
                 databaseObject[id] = personObject;
                 personJSON = JSON.stringify(databaseObject); //convert it back to json
-                fs.writeFile('users.json',personJSON,function(err){
-                    if(err) throw err;
-                }); // write it back
+                fs.writeFile('users.json', personJSON, function (err) {
+                    if (err) throw err;
+                });
             }});
         response.end("Dodano rekord, id rekordu: "+id);
     });
 }
 
 function get(request, response) {
-    response.end("get nowy");
+    path = request.url.toString();
+
+    fileName = path.split('/')[1];
+    fileName = fileName + '.json';
+
+    fs.readFile(fileName, 'utf8', function readFileCallback(err, database){
+        if (err) {//nie ma takiej tabeli
+            response.writeHead(404, {"Content-Type": "text/plain"});
+            response.write("404 Not found");
+            response.end();
+        } else {//jest tabela
+            databaseObject = JSON.parse(database); //now it an object
+            if(databaseObject[path.split('/')[2]]!==undefined){//znalezione po id
+                response.end(JSON.stringify(databaseObject[path.split('/')[2]]));
+            }else{//nie znalezione po id
+                if(path.split('/').length === 3){//bylo podane bledne id i tylko tyle
+                    response.writeHead(300, {"Content-Type": "text/plain"});
+                    response.write("300 Object not found");
+                    response.end();
+                }else{//szuka po innej wartosci
+                    var founded = undefined;
+                    var keys = Object.keys(databaseObject);
+                    var subkey = path.split('/')[2];
+                    var value = path.split('/')[3];
+
+                    for(var index in keys){
+                        var key = keys[index];
+                        var person = databaseObject[key];
+                        if(person[subkey] === value){
+                            founded = JSON.stringify(person);
+                        }
+                    }
+                    if(founded === undefined){
+                        response.end("brak rekordów");
+                    }else{
+                        response.end(founded.toString());
+                    }
+                }
+            }
+        }});
 }
 
 function requestHandler(request, response) {
