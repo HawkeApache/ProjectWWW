@@ -1,10 +1,34 @@
 var http = require('http');
 var url = require('url');
+var fs = require('fs');
+var shortid = require('shortid');
 
-// var users = JSON.parse({'pe':{}});
 
-function post(reqest, response) {
-    response.end("POSTT nowy");
+function post(request, response) {
+    var person = '';
+
+    request.on('data', function (data) {
+        person += data;
+        if (person.length > 1e6)
+            request.connection.destroy();
+    });
+
+    request.on('end', function () {
+        var id = shortid.generate();
+        fs.readFile('users.json', 'utf8', function readFileCallback(err, database){
+            if (err){
+                console.log(err);
+            } else {
+                databaseObject = JSON.parse(database); //now it an object
+                personObject = JSON.parse(person);
+                databaseObject[id] = personObject;
+                personJSON = JSON.stringify(databaseObject); //convert it back to json
+                fs.writeFile('users.json',personJSON,function(err){
+                    if(err) throw err;
+                }); // write it back
+            }});
+        response.end("Dodano rekord, id rekordu: "+id);
+    });
 }
 
 function get(request, response) {
