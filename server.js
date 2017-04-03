@@ -26,8 +26,8 @@ function post(request, response) {
                 databaseObject = JSON.parse(database); //now it an object
                 personObject = JSON.parse(person);
                 databaseObject[id] = personObject;
-                personJSON = JSON.stringify(databaseObject); //convert it back to json
-                fs.writeFile(fileName, personJSON, function (err) {
+                databaseJSON = JSON.stringify(databaseObject); //convert it back to json
+                fs.writeFile(fileName, databaseJSON, function (err) {
                     if (err) throw err;
                 });
             }});
@@ -104,9 +104,9 @@ function put(request, response) {
             if (databaseObject[path.split('/')[2]] !== undefined) {//znalezione po id
                 personObject = JSON.parse(person);
                 databaseObject[path.split('/')[2]] = personObject;
-                personJSON = JSON.stringify(databaseObject); //convert it back to json
+                databaseJSON = JSON.stringify(databaseObject); //convert it back to json
                 response.end("UPDATE\n" + JSON.stringify(databaseObject[path.split('/')[2]]));
-                fs.writeFile('users.json', personJSON, function (err) {
+                fs.writeFile('users.json', databaseJSON, function (err) {
                     if (err) throw err;
                 });
             } else { //nie było takiego w bazie więc tworzymy
@@ -118,8 +118,8 @@ function put(request, response) {
                         databaseObject = JSON.parse(database); //now it an object
                         personObject = JSON.parse(person);
                         databaseObject[id] = personObject;
-                        personJSON = JSON.stringify(databaseObject); //convert it back to json
-                        fs.writeFile('users.json', personJSON, function (err) {
+                        databaseJSON = JSON.stringify(databaseObject); //convert it back to json
+                        fs.writeFile('users.json', databaseJSON, function (err) {
                             if (err) throw err;
                         });
                     }});
@@ -145,8 +145,8 @@ function del(request, response) {
             if (databaseObject[path.split('/')[2]] !== undefined) {//znalezione po id
                 response.end(JSON.stringify(databaseObject[path.split('/')[2]])); //zwracamy to co usuwamy
                 delete databaseObject[path.split('/')[2]];
-                personJSON = JSON.stringify(databaseObject); //convert it back to json
-                fs.writeFile('users.json', personJSON, function (err) {
+                databaseJSON = JSON.stringify(databaseObject); //convert it back to json
+                fs.writeFile('users.json', databaseJSON, function (err) {
                     if (err) throw err;
                 });
             } else {
@@ -154,6 +154,58 @@ function del(request, response) {
             }
         }
     })
+}
+
+function patch(request, response) {
+    var path = request.url.toString();
+
+    var fileName = path.split('/')[1];
+    var fileName = fileName + '.json';
+    var keyToData = path.split('/')[2];
+
+    var newPerson = '';
+
+    request.on('data', function (data) {
+        newPerson += data;
+        if (newPerson.length > 1e6)
+            request.connection.destroy();
+    });
+
+    request.on('end', function () {
+        fs.readFile(fileName, 'utf8', function readFileCallback(err, database) {
+            if (err) {//nie ma takiej tabeli
+                response.writeHead(404, {"Content-Type": "text/plain"});
+                response.write("404 Not found");
+                response.end();
+            } else {//jest tabela
+                var databaseObject = JSON.parse(database); //now it an object
+                var personFromDatabase = databaseObject[keyToData];
+                if(personFromDatabase === undefined){
+                    var id = shortid.generate();
+                    var personObject = JSON.parse(newPerson);
+                    databaseObject[id] = personObject;
+                    var databaseJSON = JSON.stringify(databaseObject); //convert it back to json
+                    fs.writeFile(fileName, databaseJSON, function (err) {
+                        if (err) throw err;
+                    });
+                    response.end("Dodano rekord, id rekordu: "+id);
+                }else{
+                    newPerson = JSON.parse(newPerson);//otrzymane dane
+                    for( var index in Object.keys(newPerson)){
+                        var key = Object.keys(newPerson)[index];
+                        personFromDatabase[key] = newPerson[key];
+                    }
+                    databaseObject[keyToData] = personFromDatabase;
+                    var databaseJSON = JSON.stringify(databaseObject); //convert it back to json
+                    fs.writeFile(fileName, databaseJSON, function (err) {
+                        if (err) throw err;
+                    });
+                    response.end("Dane zmienione");
+                }
+            }
+        })
+    });
+
 }
 
 function requestHandler(request, response) {
@@ -171,7 +223,7 @@ function requestHandler(request, response) {
             del(request, response);
             break;
         case 'PATCH' :
-            console.log("JESZCZE NIE OBSŁUŻONE");
+            patch(request, response);
             break;
         default:
             console.log("METODA NIE OBSŁUŻONA");
