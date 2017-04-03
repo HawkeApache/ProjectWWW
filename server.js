@@ -71,7 +71,35 @@ function get(request, response) {
                     }
                 }
             }
-        }});
+        }
+    });
+}
+
+function del(request, response) {
+    path = request.url.toString();
+
+    fileName = path.split('/')[1];
+    fileName = fileName + '.json';
+
+    fs.readFile(fileName, 'utf8', function readFileCallback(err, database) {
+        if (err) {//nie ma takiej tabeli
+            response.writeHead(404, {"Content-Type": "text/plain"});
+            response.write("404 Not found");
+            response.end();
+        } else {//jest tabela
+            databaseObject = JSON.parse(database); //now it an object
+            if (databaseObject[path.split('/')[2]] !== undefined) {//znalezione po id
+                response.end(JSON.stringify(databaseObject[path.split('/')[2]]));
+                delete databaseObject[path.split('/')[2]];
+                personJSON = JSON.stringify(databaseObject); //convert it back to json
+                fs.writeFile('users.json', personJSON, function (err) {
+                    if (err) throw err;
+                });
+            } else {
+                response.end("brak rekordów");
+            }
+        }
+    })
 }
 
 function requestHandler(request, response) {
@@ -83,8 +111,8 @@ function requestHandler(request, response) {
         case 'GET':
             get(request,response);
             break;
-        default:
-            response.end("działa");
+        case 'DELETE':
+            del(request, response);
             break;
     }
 }
