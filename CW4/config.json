@@ -1,5 +1,5 @@
 {
-  "title":"",
-  "release":"",
-  "rating":""
+  "title":".title_wrapper h1",
+  "release":".title_wrapper h1 a",
+  "rating":".ratingValue :nth-child(1)"
 }

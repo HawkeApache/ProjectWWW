@@ -21,30 +21,27 @@ request(url, function (error, response, html) {
         //" .klasa h1"
         //#id h1
 
-        $('.title_wrapper:not(#titleYear)').filter(function () { //tytuł bez roku
-            var data = $(this);
-            title = data.text();
-//title = data.children.remove.end.text.trim
-            json.title = title;
+        var buf = fs.readFileSync('./config.json');
+        this.title = JSON.parse(buf.toString()).title;
+        this.release = JSON.parse(buf.toString()).release;
+        this.rating = JSON.parse(buf.toString()).rating;
 
+        $(this.title).filter(function () { //tytuł bez roku
+            var data = $(this);
+            json.title = data.text().split("(")[0];
         });
 
-        $('.title_wrapper h1 a').filter(function () { //rok
+        $(this.release).filter(function () { //rok
             var data = $(this);
-            release = data.text();
-
-            json.release = release;
+            json.release = data.text();
         });
 
-        $('.ratingValue :nth-child(1)').filter(function () { //ratind
+        $(this.rating).filter(function () { //ratind
             var data = $(this);
-
-            rating = data.text();
-
-            json.rating = rating;
-        })
+            json.rating = data.text();
+        });
 
 
         console.log(json);
     }
-})
+});
