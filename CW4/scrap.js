@@ -49,35 +49,67 @@ function getMovie(req, res) {
 }
 
 function getActor(req, res) {
-    var json = '';
+    var jj = '';
 
     req.on('data', function (data) {
-        json += data;
-        if (json.length > 1e6)
+        jj += data;
+        if (jj.length > 1e6)
             request.connection.destroy();
     });
 
     req.on('end', function () {
-        var url = JSON.parse(json).URL;
+        jj = JSON.parse(jj);
+
+        var url = 'http://www.imdb.com/find?ref_=nv_sr_fn&q='
+            + jj.firstName
+            + '+'
+            + jj.lastName
+            + '&s=all';
+        var data = 'http://www.imdb.com';
         request(url, function (error, response, html) {
             if (!error) {
                 var $ = cheerio.load(html); //sparsowany html w drzewo
 
-                var json = {title: "", release: "", rating: ""};
-
-                var buf = fs.readFileSync('./config.json');
-                this.title = JSON.parse(buf.toString()).title;
-                this.release = JSON.parse(buf.toString()).release;
-                this.rating = JSON.parse(buf.toString()).rating;
-
-                $(this.title).filter(function () { //tytuł bez roku
-                    var data = $(this);
-                    json.title = data.text().split("(")[0];
+                $('#main > div > div:nth-child(3) tr:nth-child(1) > td.result_text > a').filter(function () {
+                    data += $(this).attr('href');
                 });
 
-                res.end(JSON.stringify({"actor":"actorka"}));
-                console.log(json);
+                console.log(data);
             }
+
+            request(data, function (error, response, html) {
+                if (!error) {
+                    var $ = cheerio.load(html);
+                    var json = {NumberOfFilms: "", Film1: "", Film2: "", Film3: ""};
+
+                    $('#filmo-head-actor').filter(function () {
+                        var liczba = $(this);
+                        console.log(liczba.text().split('(')[1].split(' ')[0]);
+                        json.NumberOfFilms = liczba.text().split('(')[1].split(' ')[0];
+                    });
+
+                    $('#knownfor > div:nth-child(1) > div.knownfor-title-role > a').filter(function () {
+                        var liczba = $(this).attr('title');
+                        console.log(liczba);
+                        json.Film1 = $(this).attr('title');
+                    });
+
+                    $('#knownfor > div:nth-child(2) > div.knownfor-title-role > a').filter(function () {
+                        var liczba = $(this).attr('title');
+                        console.log(liczba);
+                        json.Film2 = $(this).attr('title');
+                    });
+
+                    $('#knownfor > div:nth-child(3) > div.knownfor-title-role > a').filter(function () {
+                        var liczba = $(this).attr('title');
+                        console.log(liczba);
+                        json.Film3 = $(this).attr('title');
+                    });
+
+                    res.end(JSON.stringify(json));
+                    console.log(json);
+                }
+            });
         });
     });
 }
